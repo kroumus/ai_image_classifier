@@ -1,7 +1,7 @@
 import cv2
 import numpy as np 
 import streamlit as st
-from tensorflow.keras.applications.mobile_net_v2 import (
+from tensorflow.keras.applications.mobilenet_v2 import (
     MobileNetV2,
     preprocess_input,
     decode_predictions
@@ -15,16 +15,16 @@ def load_model():
 def preprocess_image(image):
     img = np.array(image)
     img = cv2.resize(img, (224,224))
-    img = preprocess_input(image)
+    img = preprocess_input(img)
     img = np.expand_dims(img, axis=0)
     return img
 
 def classify_image(model, image):
     try:
-        preprocess_image = preprocess_image(image)
-        predictions =  model.predict(preprocess_image)
-        decoded_predictions = decoded_predictions(predictions, top=3)[0]
-        return decoded_predictions
+        processed_image = preprocess_image(image)
+        predictions = model.predict(processed_image)
+        decoded_preds = decode_predictions(predictions, top=3)[0]
+        return decoded_preds
    
     except Exception as e:
         st.error(f"Error Classifying Image: {str(e)}")
@@ -41,18 +41,19 @@ def main():
     model = load_cache_model()
     uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "png"])
 
-    if uploaded_file is None:
-        image = st.image(
-            uploaded_file, caption="Uploaded Image", use_container_width=True
-        )
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file)
+        st.image(image, caption="Uploaded Image", use_container_width=True)
         btn = st.button("Classify Image")
 
         if btn:
             with st.spinner("Analyzing Image..."):
-                image = image.open(uploaded_file)
-                predictions = classify_image(image)
+                predictions = classify_image(model, image)
 
                 if predictions:
                     st.subheader("Predictions")
                     for _, label, score in predictions:
                         st.write(f"**{label}**: {score:.2%}")
+
+if __name__ == "__main__":
+    main()
